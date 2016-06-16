@@ -3,9 +3,8 @@ package com.lendico.iban;
 
 import com.neovisionaries.i18n.CountryCode;
 
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /***
  * @author Malik Lalani
@@ -16,8 +15,8 @@ public class IBANGenerator {
     private static final int MOD = 97;
     private static final long MAX = 999999999;
 
-    // Thread-Safe Set to save IBAN History.
-    private Set<String> IBANHistory = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    // Set to save IBAN History.
+    private Set<String> IBANHistory = new HashSet<>();
 
     /***
      * Calculates Check Digits based on https://en.wikipedia.org/wiki/International_Bank_Account_Number.
@@ -57,6 +56,21 @@ public class IBANGenerator {
     }
 
     /***
+     * Check whether the generated IBAN already exists in history set.
+     *
+     * @param iban
+     * @return True if IBAN already exists.
+     */
+    private synchronized boolean checkExistingIBAN(String iban) {
+        if (IBANHistory.contains(iban)) {
+            return true;
+        } else {
+            IBANHistory.add(iban);
+            return false;
+        }
+    }
+
+    /***
      * Generates IBAN for Given Country name.
      *
      * @param country Name of Country for IBAN (String).
@@ -83,10 +97,8 @@ public class IBANGenerator {
         System.out.println("IBAN for " + country + " is " + iban);
 
         // Check for Duplication.
-        if (IBANHistory.contains(iban)) {
+        if (checkExistingIBAN(iban)) {
             return generateIBAN(country);
-        } else {
-            IBANHistory.add(iban);
         }
 
         return iban;
